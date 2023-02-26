@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>WASM</title>
+  <script type="application/javascript" src="https://cdn.jsdelivr.net/gh/irzhywau/drm-sandbox/dash.js"></script>
+  <script src="/wasm_exec.js"></script>
+  <script src="/loader.js"></script>
+  <script>
+    (function (window, document) {
+      // see also https://www.w3.org/TR/eme-initdata-cenc/#common-system
+      function parsePssh(buff) {
+        const dv = new DataView(buff, 0, buff.byteLength);
+
+        const systemIDs = [];
+        const kids = [];
+
+        // ensure to start from a PSSH box header
+        let cursor = 0;
+        while (cursor < buff.byteLength) {
+          const size = dv.getUint32(cursor);
+          const type = dv.getUint32(cursor + 4);
+          if (type === 0x70737368 /* 'pssh' */) {
+            break;
+          }
+          cursor += size;
+        }
+
+        // in this stage, cursor is the cursor of box header
+        // extract CENC header
+        const cencSize = dv.getUint32(cursor);
+        if (dv.getUint32(cursor + 4) !== 0x70737368 /* 'pssh' */) {
+          return {};
+        }
+        cursor += 8;
+
+        cencSpec = {};
+
+        // version and flag
+        cencSpec.version = buff.slice(cursor, cursor + 4);
+        cursor += 4;
+
+        // extract systemId
+        systemIDs.push(
+          buff.slice(cursor, cursor + 16)
+        );
+        cursor += 16;
+
+        // count KIDs
+        cencSpec.kidsCount = dv.getUint32(cursor);
+        cursor += 4;
+
+        for (let i = 0; i < cencSpec.kidsCount; i++) {
+          kids.push(
+            buff.slice(cursor, cursor + 16)
+          );
+          cursor += 16;
+        }
+
+        // not sure what this is [00 00 00 00]
+        cursor += 4;
+
+        // handle clearkey
+        const ckSize = dv.getUint32(cursor);
+        if (dv.getUint32(cursor + 4) === 0x70737368 /* 'pssh' */) {
+          // have clear data
+          cursor += 8;
+
+          // skip flag placeholder [00, 00, 00, 00]
+          cursor += 4;
+          systemIDs.push(
+            buff.slice(cursor, cursor + 16)
+          );
+          cursor += 16;
+        }
+
+        const psshBodySize = dv.getUint32(cursor);
+        cursor += 4;
+
+        const body = buff.slice(cursor, cursor + psshBodySize)
+
+        return {
+          headers: { systemIDs, kids, spec: cencSpec }, body
+        }
+      }
+      window.parsePssh = parsePssh;
+
+      async function handleEncrypted(e) {
+        var mediaKeys = html5video.mediaKeys;
+        //fail the test if the mediaKeys were not set on html5video
+        if (mediaKeys === null || mediaKeys === undefined) {
+          console.error("MediaKeys set on html5video is " + mediaKeys);
+        }
+        // create and initialize session
+        var keySession = mediaKeys.createSession();
+        try {
+          keySession.addEventListener("message", async function handleMessage(event) {
+            console.log('keySession.message', event);
+            // event.message = {kids: [...base64-encoded-kid], type: temporary}
+
+            // we need to create the payload with following elements
+            // - event.message: [kids] containing identity of the content
+            // - event.initDataType: [cenc] type of the init data
+            // - event.initData: [pssh] init data
+
+            switch (event.messageType) {
+              case 'license-request':
+                const { body, ...pssh } = parsePssh(e.initData);
+                window.__initdData = e.initData;
+                // process the request here, we need to add {.initData, .initDataType} this this scope
+                console.log('processing license-request...', [event.message, body, e.initDataType, pssh]);
+
+                form = new FormData();
+                form.append('payload', new Blob([event.message], { type: 'application/json' }))
+                form.append('pssh', new Blob([body], { type: 'application/json' }))
+
+                const response = await fetch('http://localhost:8800/acquireLicense', {
+                  method: 'POST',
+                  body: form,
+                  responseType: 'arraybuffer'
+                });
+
+                const b = await response.arrayBuffer()
+                console.log({ response, b })
+
+                // wasm method
+                // acquireLicense(
+                //   new Uint8Array(event.message),
+                //   new Uint8Array(body),
+                // ).then(console.log).catch(console.error)
+                break;
+            }
+
+            var keySession = event.target;
+            /*
+                For any other key system (eg: widevine), application has to make 
+                network request here to get the license which is then updated for the session.
+                Since we already know the license format for Clear Key from the specification 
+                https://www.w3.org/TR/encrypted-media/#clear-key-license-format and also the keys 
+                used to encrypt the media, we are hard coding the license here.
+            */
+
+            // here we make license request
+            // once response is received, we update the session with the license
+            // --- see below
+            // var license = (new TextEncoder()).encode('{"keys":[{"kty":"oct","k":"hyN9IKGfWKdAwFaE5pm0qg","kid":"oW5AK5BW43HzbTSKpiu3SQ"}],"type":"temporary"}');
+            // keySession.update(license).catch(
+            //   function (error) {
+            //     console.error('Failed to update the session', error);
+            //   }
+            // );
+          }, false);
+        } catch (err) {
+          console.error("Unable to add 'message' " + "event listener to the keySession object. Error: " + err.message);
+        }
+
+        console.log('generating request', { keySession, initDataType: e.initDataType, initData: e.initData })
+        var p = keySession.generateRequest(e.initDataType, e.initData);
+
+        p.catch(function (error) {
+          console.error(error);
+          keySession.close();
+        });
+
+        return p;
+      }
+      function handleKeyRequest(html5video) {
+        var config = [{
+          initDataTypes: ['cenc'],
+          videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.640029"' }],
+          audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"' }]
+        }];
+
+        navigator.requestMediaKeySystemAccess('org.w3.clearkey', config).then(function (keySystemAccess) {
+          console.log('Access granted');
+          console.log(keySystemAccess);
+
+          return keySystemAccess.createMediaKeys();
+        }).then(function (mediaKeys) {
+          console.log('Media keys created');
+
+          html5video.setMediaKeys(mediaKeys);
+
+          html5video.addEventListener('encrypted', function (e) {
+            return handleEncrypted(e).catch(function (error) {
+              throw e;
+            });
+          });
+        }).then(function () {
+          console.info('Media keys attached to video element');
+        }).catch(function (error) {
+          console.error('ERROR', error);
+        });
+      }
+
+      // op=0xD4b35f2117896540b4aAce12AA994eeCA01070A0
+      // kid=1064dbc48cc35c7fa724f6e723e73e49
+      // key=933ea3404d78463c86fcbd1913323389
+      // ---------------------------------------------
+      // pssh.json
+      // {
+      //   "protectionType": "clearkey",
+      //   "variant": "eth.web3.clearkey",
+      //   "data": {
+      //     "authority": "0x44bC6b5B64E78Aa14a2f82E2D97026444557F746",
+      //     "chainId": 1337,
+      //     "rpc": "http://localhost:8545"
+      //   }
+      // }
+      // more data should be added to pssh.json to form the payload for session request
+      // we need { ledger, tokenId } // hese info are not yet defined during encryption
+      // Encryption command --------------------------
+      // mp4dash \
+      //  --force \
+      //  --use-segment-list \
+      //  --use-segment-timeline \
+      //  --subtitles \
+      //  --encryption-cenc-scheme=cenc \
+      //  --encryption-args="--global-option mpeg-cenc.eme-pssh:true --pssh 1077efecc0b24d02ace33c1e52e2fb4b:pssh.json" \
+      //  --encryption-key=1064dbc48cc35c7fa724f6e723e73e49:933ea3404d78463c86fcbd1913323389 \
+      //  --clearkey \
+      //  video/frag.sample.mp4 -o video/output
+      function initWithProtection(html5video, url, protData, options = {}) {
+        handleKeyRequest(html5video);
+
+        var { filterLicenseRequest, filterLicenseResponse } = options;
+        var video,
+          player;
+
+        player = dashjs.MediaPlayer().create();
+        player.updateSettings({
+          debug: { 'logLevel': dashjs.Debug.LOG_LEVEL_DEBUG },
+          streaming: {
+            protection: {
+              ignoreEmeEncryptedEvent: true
+            }
+          }
+        });
+
+        console.log({ player, url, protData });
+
+        player.initialize(html5video, url, true);
+        player.setProtectionData(protData);
+        player.play();
+      }
+
+      function handler() {
+        var url = "/video/output/stream.mpd";
+        var protData = {
+          "com.w3.clearkey": {
+            priority: 0
+          }
+        };
+
+        initWithProtection(document.getElementById("html5video"), url, protData);
+      }
+
+      window.addEventListener('load', handler)
+    })(window, document)
+  </script>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root">
+    <video id="html5video" width="100%" height="100%" autoplay controls></video>
+    <img src="/pssh.png" alt="" />
+  </div>
+</body>
+
+</html>

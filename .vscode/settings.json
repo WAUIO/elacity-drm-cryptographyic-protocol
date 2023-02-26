@@ -1,0 +1,13 @@
+{
+  "go.toolsEnvVars": {
+    "GOOS": "js",
+    "GOARCH": "wasm"
+  },
+  "go.useLanguageServer": true,
+  "gopls": {
+    "analyses": {
+       "simplifycompositelit": false, 
+       "composites": false
+    }
+  }
+}

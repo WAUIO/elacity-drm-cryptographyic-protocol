@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "go: build (debug)",
+      "type": "shell",
+      "command": "go",
+      "args": [
+        "build",
+        "-gcflags=all=-N -l",
+        "-o",
+        "${fileDirname}/__debug_bin"
+      ],
+      "options": {
+        "cwd": "${fileDirname}"
+      }
+    },
+    {
+      "label": "go: wasm (debug)",
+      "type": "shell",
+      "command": "go",
+      "args": [
+        "build",
+        "-gcflags=all=-N -l",
+        "-o",
+        "${workspaceFolder}/sample/debug.crypto.protocol.wasm"
+      ],
+      "options": {
+        "cwd": "${fileDirname}"
+      }
+    }
+  ]
+}
