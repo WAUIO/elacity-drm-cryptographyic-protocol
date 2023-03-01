@@ -40,7 +40,7 @@ func NewSellex(addr string, rpc string, opt ...SellexOptions) (*Sellex, error) {
 	}, nil
 }
 
-func (l *Sellex) AwaitFor(p *FrontRequest) <-chan Response {
+func (l *Sellex) AwaitFor(kids []string, p *FrontRequest) <-chan Response {
 	// 0. [/] peer has generated keys
 	// 1. [x] prove Authority of the remote contract
 	// 2. [] build the request to send to remote contract containing
@@ -57,7 +57,7 @@ func (l *Sellex) AwaitFor(p *FrontRequest) <-chan Response {
 	// 5. [x] verify integrity of the response
 	// 6. [] decipher the license using peer.ecdh() that should issue the same
 	// shared secret used by remote to encrypt the license
-	r, _ := createRequestSession(p)
+	r, _ := createRequestSession(kids, p)
 
 	l.send(r)
 
@@ -65,7 +65,7 @@ func (l *Sellex) AwaitFor(p *FrontRequest) <-chan Response {
 }
 
 func (l *Sellex) send(s *Session) {
-	license, err := l.authority.AcquireLicense(&bind.CallOpts{
+	lic, err := l.authority.AcquireLicense(&bind.CallOpts{
 		From: s.payload.Signer,
 	}, contracts.SignedLicenseRequest{
 		Request:   *s.payload.Message,
@@ -76,5 +76,5 @@ func (l *Sellex) send(s *Session) {
 		return
 	}
 
-	s.outcome <- NewLicenseResponse(license)
+	s.outcome <- NewLicenseResponse(s.kids, lic)
 }

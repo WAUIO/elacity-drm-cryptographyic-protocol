@@ -52,5 +52,5 @@ func RequestLicense(r *Request) <-chan Response {
 		return WrapError(err, 500)
 	}
 
-	return sl.AwaitFor(r.Request)
+	return sl.AwaitFor(r.Payload.Kids, r.Request)
 }

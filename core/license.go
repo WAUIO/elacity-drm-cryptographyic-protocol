@@ -1,11 +1,10 @@
 package core
 
 import (
-	"encoding/json"
-
 	"github.com/pkg/errors"
 
 	"github.com/elacity/crypto-protocol/contracts"
+	"github.com/elacity/crypto-protocol/core/license"
 	"github.com/elacity/crypto-protocol/core/peer"
 	util "github.com/elacity/crypto-protocol/internal"
 )
@@ -15,9 +14,10 @@ type Session struct {
 	r       uint64
 	outcome chan Response
 	payload *FrontRequest
+	kids    []string
 }
 
-func createRequestSession(payload *FrontRequest) (*Session, error) {
+func createRequestSession(kids []string, payload *FrontRequest) (*Session, error) {
 	out := make(chan Response, 1)
 
 	peer, err := peer.NewPeer()
@@ -30,6 +30,7 @@ func createRequestSession(payload *FrontRequest) (*Session, error) {
 		r:       util.RandomNum(),
 		outcome: out,
 		payload: payload,
+		kids:    kids,
 	}, nil
 }
 
@@ -38,24 +39,25 @@ func (s *Session) Output() <-chan Response {
 }
 
 type LicenseResponse struct {
-	contracts.ILicenseProviderLicense
+	src *contracts.ILicenseProviderLicense
+	dst license.LicenseOutput
 }
 
 func (raw *LicenseResponse) Bytes() []byte {
-	b, err := json.Marshal(raw)
-	if err != nil {
-		return nil
-	}
-
-	return b
+	return raw.dst.Bytes()
 }
 
 func (raw *LicenseResponse) Code() int {
 	return 200
 }
 
-func NewLicenseResponse(license contracts.ILicenseProviderLicense) *LicenseResponse {
+func NewLicenseResponse(kids []string, lic contracts.ILicenseProviderLicense) *LicenseResponse {
+	// for now, we only support clearkey
+	dst := license.BuildClearKeyResponse(kids, &lic)
+	dst.Issuer = lic.Issuer.String()
+
 	return &LicenseResponse{
-		ILicenseProviderLicense: license,
+		src: &lic,
+		dst: dst,
 	}
 }
