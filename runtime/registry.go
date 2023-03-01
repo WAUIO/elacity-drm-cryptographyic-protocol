@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"syscall/js"
 
-	"github.com/elacity/crypto-protocol/protocol"
+	"github.com/elacity/crypto-protocol/core"
 	"github.com/pkg/errors"
 )
 
@@ -16,7 +16,7 @@ func Register() {
 }
 
 func acquireLicense(value js.Value, args []js.Value) (interface{}, error) {
-	req := new(protocol.Request)
+	req := new(core.Request)
 
 	// in javascript, the call signature is below:
 	// acquireLicense(payload, pssh);
@@ -38,7 +38,18 @@ func acquireLicense(value js.Value, args []js.Value) (interface{}, error) {
 		}
 	}
 
-	response := <-protocol.InitLicenseRequest(req)
+	{
+		var rawRequest core.RawFrontRequest
+		lrequest := make([]byte, args[2].Get("length").Int())
+		_ = js.CopyBytesToGo(lrequest, args[2])
+
+		if err := json.Unmarshal(lrequest, &rawRequest); err != nil {
+			req.Request, _ = core.FromRawToComprehensive(&rawRequest)
+			return nil, errors.Wrapf(err, "failed to decode request")
+		}
+	}
+
+	response := <-core.RequestLicense(req)
 
 	if response.Code() != 200 {
 		return nil, errors.New(string(response.Bytes()))

@@ -6,7 +6,8 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"github.com/elacity/crypto-protocol/protocol"
+	"github.com/elacity/crypto-protocol/core"
+	"github.com/elacity/crypto-protocol/log"
 	"github.com/pkg/errors"
 )
 
@@ -17,7 +18,11 @@ func main() {
 
 	http.HandleFunc("/healthz", healthz)
 	http.HandleFunc("/acquireLicense", acquireLicense)
-	http.ListenAndServe(*addr, nil)
+
+	log.Infof("listening on %s...", *addr)
+	if err := http.ListenAndServe(*addr, nil); err != nil {
+		log.Errorf("failed to start server; %s", err)
+	}
 }
 
 func healthz(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +52,7 @@ func acquireLicense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := new(protocol.Request)
+	req := new(core.Request)
 
 	if r.MultipartForm.File["pssh"] != nil {
 		if err := parseInput(*r.MultipartForm.File["pssh"][0], &req.Pssh); err != nil {
@@ -63,7 +68,19 @@ func acquireLicense(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	response := <-protocol.InitLicenseRequest(req)
+	if r.MultipartForm.File["request"] != nil {
+		var rawRequest core.RawFrontRequest
+		if err := parseInput(*r.MultipartForm.File["request"][0], &rawRequest); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if req.Request, err = core.FromRawToComprehensive(&rawRequest); err != nil {
+			log.Warnf("failed to parse request: %s, empty value will be passed", err)
+		}
+	}
+
+	response := <-core.RequestLicense(req)
 
 	w.WriteHeader(response.Code())
 	w.Write(response.Bytes())

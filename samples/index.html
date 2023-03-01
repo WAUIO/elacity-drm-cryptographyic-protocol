@@ -114,6 +114,18 @@
                 form = new FormData();
                 form.append('payload', new Blob([event.message], { type: 'application/json' }))
                 form.append('pssh', new Blob([body], { type: 'application/json' }))
+                form.append('request', new Blob([new TextEncoder().encode(JSON.stringify({
+                  "message": {
+                    "entitlement": "play",
+                    "entity": {
+                      "contentId": "0x1064dbc48cc35c7fa724f6e723e73e49",
+                      "ledger": "0x0357e7daE845a458C0B179B749D43358A841E369",
+                      "tokenId": "1"
+                    }
+                  },
+                  "signer": "0xaB42f0B0048DD30b19660faEa86b41833045cC38",
+                  "signature": "0x59dd4b1d2cdf9f30669050116053a3f5fbc5de6259532139b22a7a9f1ca0963f0c514746b425ec090cdc3563a56391ed848a4580367d66d0a79ba2799f507f2b1c"
+                }))], { type: 'application/json' }))
 
                 const response = await fetch('http://localhost:8800/acquireLicense', {
                   method: 'POST',

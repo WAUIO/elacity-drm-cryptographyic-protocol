@@ -1,4 +1,4 @@
-package protocol
+package core
 
 var (
 	// Version is the current version of the protocol
