@@ -76,5 +76,6 @@ func (l *Sellex) send(s *Session) {
 		return
 	}
 
+	log.Tracef("creating license object for %+v -> %+v...", s.kids, lic)
 	s.outcome <- NewLicenseResponse(s.kids, lic)
 }

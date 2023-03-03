@@ -4,9 +4,10 @@
 <head>
   <meta charset="utf-8" />
   <title>WASM</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.2/pako.min.js"></script>
   <script type="application/javascript" src="https://cdn.jsdelivr.net/gh/irzhywau/drm-sandbox/dash.js"></script>
   <script src="/wasm_exec.js"></script>
-  <script src="/loader.js"></script>
+  <script src="/loader.gz.js"></script>
   <script>
     (function (window, document) {
       // see also https://www.w3.org/TR/eme-initdata-cenc/#common-system
@@ -127,26 +128,40 @@
                   "signature": "0xfe638f8b4d5394eb1a46300674949c7fa611622ed60fb9130fd8fb24757dde09659ac19ba7bcc9413d6da95154e7a9872a738159d9e0083fb9c3aa53660023e21c"
                 }))], { type: 'application/json' }))
 
-                const response = await fetch('http://localhost:8800/acquireLicense', {
-                  method: 'POST',
-                  body: form,
-                  responseType: 'arraybuffer'
-                });
+                // wasm method
+                const lic = await acquireLicense(
+                  new Uint8Array(event.message),
+                  new Uint8Array(body),
+                  new TextEncoder().encode(JSON.stringify({
+                    "message": {
+                      "entitlement": "play",
+                      "entity": {
+                        "contentId": "0xcaf8ab905c065c70b850735c8474bdb2", // 8007fe0190824a228c2df3e21d0f8ef7
+                        "ledger": "0xFcd1EC6cFAE136d9e8fA3Db6B2666523EeB2b874",
+                        "tokenId": "1"
+                      }
+                    },
+                    "signer": "0xEf1325b2fB8297FEBd54c76C3512A2959BC1cEEc",
+                    "signature": "0xfe638f8b4d5394eb1a46300674949c7fa611622ed60fb9130fd8fb24757dde09659ac19ba7bcc9413d6da95154e7a9872a738159d9e0083fb9c3aa53660023e21c"
+                  }))
+                )
+                const licBuff = lic.buffer
+                console.log({ lic, licBuff })
 
-                const b = await response.arrayBuffer()
-                console.log({ response, b })
+                // const response = await fetch('http://localhost:8800/acquireLicense', {
+                //   method: 'POST',
+                //   body: form,
+                //   responseType: 'arraybuffer'
+                // });
 
-                this.update(b).catch(
+                // const licBuff = await response.arrayBuffer()
+                // console.log({ response, licBytes })
+
+                this.update(licBuff).catch(
                   function (error) {
                     console.error('Failed to update the session', error);
                   }
                 );
-
-                // wasm method
-                // acquireLicense(
-                //   new Uint8Array(event.message),
-                //   new Uint8Array(body),
-                // ).then(console.log).catch(console.error)
                 break;
             }
 

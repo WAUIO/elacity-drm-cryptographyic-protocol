@@ -44,6 +44,11 @@ func AsyncFunc(innerFunc fn) js.Func {
 				res, err := innerFunc(this, args)
 				if err != nil {
 					reject.Invoke(jsErr.New(err.Error()))
+				} else if bytesValue, ok := res.([]byte); ok {
+					// Convert []byte to Uint8Array
+					buffer := js.Global().Get("Uint8Array").New(len(bytesValue))
+					js.CopyBytesToJS(buffer, bytesValue)
+					resolve.Invoke(buffer)
 				} else {
 					resolve.Invoke(res)
 				}
