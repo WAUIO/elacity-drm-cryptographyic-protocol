@@ -13,4 +13,4 @@
   WebAssembly.instantiateStreaming(fetch(wasmURL), go.importObject).then((result) => {
     return go.run(result.instance);
   }).catch(console.error);
-}('/debug.crypto.protocol.wasm', window));
+}('https://cdn.jsdelivr.net/gh/WAUIO/elacity-drm-cryptographyic-protocol/releases/download/1.0.0-4-g8f6e7d7/crypto.protocol-1.0.0-4-g8f6e7d7.wasm', window));
