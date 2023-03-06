@@ -1,11 +1,9 @@
 name: Publish Release
 
-# see https://github.com/RodrigoDornelles/3bc-lang/blob/master/.github/workflows/automatic-publish.yaml
-
 on:
-  push:
-    branches:
-      - main
+  release:
+    types:
+      - created
 
 env:
   PROTOVERSION: '1.0'
@@ -25,9 +23,6 @@ jobs:
       - name: Run Tests
         if: ${{ !env.ACT }}
         run: go test -v $(go list ./... | grep -v /cmd | grep -v /runtime)
-      - name: Fetch Git Repository
-        if: ${{ !env.ACT }}
-        run: git fetch --prune
       - name: Set Tag
         id: vars
         run: |
