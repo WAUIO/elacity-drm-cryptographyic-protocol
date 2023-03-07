@@ -1,6 +1,6 @@
 # elacity-drm-cryptographyic-protocol
 
-![Publish Release](https://github.com/WAUIO/elacity-drm-cryptographyic-protocol/actions/workflows/publish.yml/badge.svg)
+![Publish Release](https://github.com/WAUIO/elacity-drm-cryptographyic-protocol/actions/workflows/release.yml/badge.svg)
 
 Cryptographic Protocol to manage key exchanges with smart contracts
 
