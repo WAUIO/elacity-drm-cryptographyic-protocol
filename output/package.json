@@ -1,11 +1,15 @@
 {
   "name": "@elacity-js/crypto-protocol",
-  "version": "1.0.1",
+  "version": "__VERSION__",
   "description": "Cryptographic Protocol packaged as Webassembly",
   "main": "crypto.protocol.wasm",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "files": [
+    "crypto.protocol.wasm",
+    "crypto.protocol.wasm.gz"
+  ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/elacity-js",
     "access": "public"

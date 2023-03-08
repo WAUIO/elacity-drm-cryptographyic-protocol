@@ -55,6 +55,7 @@ jobs:
           scope: '@elacity-js'
       - run: |
           cd ${{ github.workspace }}/output
+          sed -i "s/__VERSION__/${{steps.tag.outputs.tag}}/g" package.json
           npm publish --access=public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}            
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
