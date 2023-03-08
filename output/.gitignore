@@ -1,2 +1,5 @@
 *
 !.gitignore
+!package.json
+!wapm.toml
+wapm_packages

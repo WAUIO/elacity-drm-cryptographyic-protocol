@@ -1,0 +1,10 @@
+[package]
+name = "irzhywau/cryptoprotocol"
+version = "1.0.1"
+description = "Cryptographic protocol for secure communication"
+license = "MIT"
+repository = "https://github.com/WAUIO/elacity-drm-cryptographic-protocol"
+
+[[module]]
+name = "crypto.protocol"
+source = "crypto.protocol.wasm"

@@ -1,8 +1,0 @@
-{
-  "name": "cryptographic-protocol",
-  "version": "1.0.0",
-  "author": "WAU I/O",
-  "license": "MIT",
-  "repository": "github:WAUIO/elacity-drm-cryptographic-protocol",
-  "description": "Cryptographic Protocol to manage key exchanges with smart contracts"
-}

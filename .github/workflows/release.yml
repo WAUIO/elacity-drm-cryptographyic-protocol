@@ -11,7 +11,7 @@ env:
   PROTOVERSION: "1.0"
 
 jobs:
-  publish_wasm:
+  publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,25 +25,36 @@ jobs:
       - name: Run Tests
         if: ${{ !env.ACT }}
         run: go test -v $(go list ./... | grep -v /cmd | grep -v /runtime)
-      - name: Set Vars
-        id: vars
-        run: |
-          echo ::set-output name=TAG::$(git describe --tags)
+      - name: Get tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
+        with:
+          strip_v: true
       - name: Build
         run: |
-          mkdir -p ${{ github.workspace }}/artifact
           GO111MODULE=on CGO_ENABLED=0 GOOS=js GOARCH=wasm go build \
             -ldflags "-s -w -X github.com/elacity/crypto-protocol/core.Version=${{ env.PROTOVERSION }} -X github.com/elacity/crypto-protocol/core.Tag=${{ env.TAG }}" \
-            -o ${{ github.workspace }}/artifact/crypto.protocol.wasm ./cmd/wasm/main.go
+            -o ${{ github.workspace }}/output/crypto.protocol.wasm ./cmd/wasm/main.go
         env:
-          TAG: ${{ steps.vars.outputs.TAG }}
+          TAG: ${{ steps.tag.outputs.tag }}
       - name: Gzip
         run: |
           gzip -9 \
-            -c ${{ github.workspace }}/artifact/crypto.protocol.wasm > ${{ github.workspace }}/artifact/crypto.protocol.wasm.gz
+            -c ${{ github.workspace }}/output/crypto.protocol.wasm > ${{ github.workspace }}/output/crypto.protocol.wasm.gz
       - name: Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           files: |
-            ${{ github.workspace }}/artifact/**
+            ${{ github.workspace }}/output/**
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@elacity-js'
+      - run: |
+          cd ${{ github.workspace }}/output
+          npm publish --access=public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}            

@@ -1,0 +1,19 @@
+{
+  "name": "@elacity-js/crypto-protocol",
+  "version": "1.0.1",
+  "description": "Cryptographic Protocol packaged as Webassembly",
+  "main": "crypto.protocol.wasm",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/elacity-js",
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WAUIO/elacity-drm-cryptographic-protocol.git"
+  },
+  "author": "WAUIO",
+  "license": "ISC"
+}
