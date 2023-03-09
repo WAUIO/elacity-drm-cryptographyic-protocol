@@ -5,7 +5,6 @@ import (
 	"syscall/js"
 
 	"github.com/elacity/crypto-protocol/core"
-	"github.com/elacity/crypto-protocol/log"
 	"github.com/pkg/errors"
 )
 
@@ -50,7 +49,7 @@ func acquireLicense(value js.Value, args []js.Value) (interface{}, error) {
 	}
 
 	// validation
-	log.Tracef("payload: %+v, pssh: %+v, req: %+v", req.Payload, req.Pssh, req.Request)
+	// log.Tracef("payload: %+v, pssh: %+v, req: %+v", req.Payload, req.Pssh, req.Request)
 	if err := validateRequest(req); err != nil {
 		return nil, errors.Wrapf(err, "invalid request")
 	}

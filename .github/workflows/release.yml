@@ -1,4 +1,4 @@
-name: Publish Release
+name: Release
 
 # see https://github.com/RodrigoDornelles/3bc-lang/blob/master/.github/workflows/automatic-publish.yaml
 
@@ -47,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           files: |
-            ${{ github.workspace }}/output/**
+            ${{ github.workspace }}/output/crypto.protocol.*
       - uses: actions/setup-node@v2
         with:
           node-version: '16.x'

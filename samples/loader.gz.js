@@ -21,4 +21,5 @@
       return go.run(result.instance);
     }
   ).catch(console.error);
-}('https://github.com/WAUIO/elacity-drm-cryptographyic-protocol/releases/download/1.0.0/crypto.protocol.wasm.gz', window));
+  //}('https://github.com/WAUIO/elacity-drm-cryptographyic-protocol/releases/download/1.0.0/crypto.protocol.wasm.gz', window));
+}('/crypto.protocol.wasm.gz', window));

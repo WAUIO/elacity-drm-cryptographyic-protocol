@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	_ "encoding/hex"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -76,6 +77,13 @@ func (l *Sellex) send(s *Session) {
 		return
 	}
 
-	log.Tracef("creating license object for %+v -> %+v...", s.kids, lic)
+	// verifiy the license is correctly set
+	zeroBytes16 := [16]byte{}
+	if bytes.Contains(zeroBytes16[:], lic.Key[0][:]) {
+		s.outcome <- NewLicenseError(errors.New("invalid key"))
+		return
+	}
+
+	log.Tracef("creating license object for %+v...", s.kids)
 	s.outcome <- NewLicenseResponse(s.kids, lic)
 }
